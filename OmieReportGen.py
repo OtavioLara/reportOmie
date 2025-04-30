@@ -128,12 +128,12 @@ class ReportGeneratorApp:
         self.company_combo.current(0)
         self.company_combo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
-        self.image_check = Image.open('assets/green_check.jpg')
+        self.image_check = Image.open('dist/OmieReportGen/assets/green_check.jpg')
         self.image_check = ImageTk.PhotoImage(self.image_check.resize((20, 20), Image.LANCZOS).copy())
 
-        self.image_error = Image.open('assets/error.webp')
+        self.image_error = Image.open('dist/OmieReportGen/assets/error.webp')
         self.image_error = ImageTk.PhotoImage(self.image_error.resize((20, 20), Image.LANCZOS).copy())
-        gif = Image.open('assets/loading.gif')
+        gif = Image.open('dist/OmieReportGen/assets/loading.gif')
 
         for frame in range(0, gif.n_frames):
             gif.seek(frame)
