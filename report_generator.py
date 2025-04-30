@@ -176,9 +176,10 @@ class ReportGenerator(Thread):
             report = self.create_report_from_omie()
             generate_report_excel(self.company, f'{self.month_competence:02d}{self.year_competence}', report)
             total_time = datetime.now() - start_time
+            print(str(self.report_service.requests_number / (total_time.seconds / 60)) + 'Rq/Minute')
         except Exception as e:
             self.exception = e
-        print(str(self.report_service.requests_number / (total_time.seconds / 60)) + 'Rq/Minute')
+
 
     def stop(self):
         self._stop_event.set()
