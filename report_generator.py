@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from report_service import ReportService
 import json
@@ -14,8 +15,10 @@ class ReportGenerator(Thread):
         super().__init__()
         self.nfe_total = 0
         self.nfe_count = 0
+        self.nfe_loading = True
         self.registers_total = 0
         self.registers_cur = 0
+        self.registers_loading = False
         self.company = company
         self.report_service = ReportService(self.company)
         self.missing_nestle_code_products = {}
@@ -78,7 +81,10 @@ class ReportGenerator(Thread):
         products_data = self.create_products(pedido)
         cod_pedido = str(pedido['cabecalho']['codigo_pedido'])
         if cod_pedido not in nfes.keys():
-            raise NotaFiscalNotFoundException(str(pedido['cabecalho']['codigo_pedido']))
+            raise NotaFiscalNotFoundException(self.company,
+                                              f'{self.month_competence:02d}{self.year_competence}',
+                                              str(pedido['cabecalho']['codigo_pedido'])
+                                              )
         else:
             num_nfe = nfes[str(pedido['cabecalho']['codigo_pedido'])]
 
@@ -99,16 +105,21 @@ class ReportGenerator(Thread):
         }
 
     def create_report_from_omie(self):
-        page = 1
-        page_size = 500
-        pedidos_json = self.report_service.get_pedidos(page, page_size)
-        data_list = {}
+        if not os.path.exists('./cache'):
+            os.mkdir('./cache')
+        if not os.path.exists('./reports'):
+            os.mkdir('./reports')
         self.report_service.load_all_nfes(self)
-
         with open(f'cache/nfes_{self.company}.json', 'r') as f:
             nfes = json.loads(f.read())
+        self.nfe_loading = False
 
-        self.registers_total = self.report_service.get_pedidos(1, 2)['total_de_registros']
+        page = 1
+        page_size = 200
+        pedidos_json = self.report_service.get_pedidos(page, page_size)
+        self.registers_total = pedidos_json['total_de_registros']
+        self.registers_loading = True
+        data_list = {}
         while pedidos_json.get('pagina') is not None:
             for pedido in pedidos_json['pedido_venda_produto']:
                 self.registers_cur += 1
@@ -168,6 +179,7 @@ class ReportGenerator(Thread):
                 data_list.update({data['cnpjFaturado']: data})
             page += 1
             pedidos_json = self.report_service.get_pedidos(page, page_size)
+        self.registers_loading = False
         return data_list
 
     def run(self):

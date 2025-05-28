@@ -1,8 +1,11 @@
 import requests
+
+import util
 from util import *
 from functools import lru_cache
 from tqdm import trange
 from time import sleep
+from datetime import datetime
 
 class ReportService:
     requests_number = 0
@@ -123,19 +126,29 @@ class ReportService:
         return self.create_request(resource, body)
 
     def load_all_nfes(self, report):
-        dict_nfes = self.get_nf_by_page(1, 1000)
+        page_size = 300
+        dict_nfes = self.get_nf_by_page(1, page_size)
         total_pages = dict_nfes['total_de_paginas']
         nfe_dict_data = {}
         report.nfe_total = dict_nfes['total_de_registros']
-        for page in range(1, total_pages + 1):
-            if 'nfCadastro' in dict_nfes.keys():
+        added_something = True
+        for page in range(total_pages,  0, -1):
+            if 'nfCadastro' in dict_nfes.keys() and added_something:
+                added_something = False
+                dict_nfes = self.get_nf_by_page(page, page_size)
                 for nfe in dict_nfes['nfCadastro']:
                     report.nfe_count += 1
                     if report.stopped():
                         return
-                    if nfe['compl']['nIdPedido'] != 0:
+                    if nfe['compl']['nIdPedido'] != 0 and (datetime.strptime(nfe['ide']['dEmi'], '%d/%m/%Y') >= datetime(report.year_competence, month=report.month_competence, day=1)):
                         nfe_dict_data.update({str(nfe['compl']['nIdPedido']): nfe['ide']['nNF']})
-                dict_nfes = self.get_nf_by_page(page + 1, 1000)
+                        added_something = True
 
         with open(f'cache/nfes_{self.company}.json', 'w', encoding='utf8') as f:
             f.write(json.dumps(nfe_dict_data))
+
+# rs = ReportService('NutriArt')
+# dict_nfes = rs.get_nf_by_page(20, 1000)
+# # print(util.pretty_print_dict(dict_nfes))
+# with open(f'cache/teste_{rs.company}.json', 'w', encoding='utf8') as f:
+#     f.write(util.pretty_print_dict(dict_nfes))

@@ -128,12 +128,12 @@ class ReportGeneratorApp:
         self.company_combo.current(0)
         self.company_combo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
-        self.image_check = Image.open('dist/OmieReportGen/assets/green_check.jpg')
+        self.image_check = Image.open('assets/green_check.jpg')
         self.image_check = ImageTk.PhotoImage(self.image_check.resize((20, 20), Image.LANCZOS).copy())
 
-        self.image_error = Image.open('dist/OmieReportGen/assets/error.webp')
+        self.image_error = Image.open('assets/error.webp')
         self.image_error = ImageTk.PhotoImage(self.image_error.resize((20, 20), Image.LANCZOS).copy())
-        gif = Image.open('dist/OmieReportGen/assets/loading.gif')
+        gif = Image.open('assets/loading.gif')
 
         for frame in range(0, gif.n_frames):
             gif.seek(frame)
@@ -241,18 +241,28 @@ class ReportGeneratorApp:
         if thread.is_alive():
             if thread.exception:
                 print(f'Exception na thread: {thread.exception}')
-            self.animate_loading(label)
-            root.after(100, lambda: self.verify_thread(thread, label, message_label, progress_bar, company, competence))
-            progress_bar.configure(maximum=thread.nfe_total)
-            progress_bar['value'] = thread.nfe_count
-            if 0 < thread.nfe_total == thread.nfe_count:
+                label.configure(image=self.image_error)
+                return
+            if thread.nfe_loading:
+                progress_bar.configure(maximum=thread.nfe_total)
+                progress_bar['value'] = thread.nfe_count
+                print(f'Carregando NFE {company}: {thread.nfe_count}/{thread.nfe_total}')
+            elif thread.registers_loading:
                 message_label.configure(text=f"Gerando relatório para {company} - {competence} (Carregando pedidos)")
+                print(f'Carregando pedidos {company}: {thread.registers_cur}/{thread.registers_total}')
                 progress_bar.configure(maximum=thread.registers_total)
                 progress_bar['value'] = thread.registers_cur
-
-
+            self.animate_loading(label)
+            root.after(100,
+                       lambda: self.verify_thread(thread, label, message_label, progress_bar, company, competence)
+                       )
         else:
-            label.config(image=self.image_check)
+            if not thread.exception:
+                label.configure(image=self.image_check)
+            else:
+                label.configure(image=self.image_error)
+                print(f'Exception na thread: {thread.exception}')
+            self.reports_running.remove({'company': company, 'competence': competence})
 
 
 
