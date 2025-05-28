@@ -254,14 +254,15 @@ class ReportGeneratorApp:
                 progress_bar['value'] = thread.registers_cur
             self.animate_loading(label)
             root.after(100,
-                       lambda: self.verify_thread(thread, label, message_label, progress_bar, company, competence)
-                       )
+                lambda: self.verify_thread(thread, label, message_label, progress_bar, company, competence)
+            )
         else:
             if not thread.exception:
                 label.configure(image=self.image_check)
+                logger.info('Thread for company')
             else:
                 label.configure(image=self.image_error)
-                print(f'Exception na thread: {thread.exception}')
+                logger.error(thread.exception)
             self.reports_running.remove({'company': company, 'competence': competence})
 
 
